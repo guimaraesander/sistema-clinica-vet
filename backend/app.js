@@ -7,20 +7,25 @@ import cors from 'cors';
 import fs from 'fs';
 
 import { FRONTEND_URL, CORS_ORIGINS } from './src/config/env.js';
-import { errorHandler } from './src/middleware/errorMiddleware.js';
 
-// Rotas (vamos manter auth e products por enquanto)
+// Rotas
 import authRoutes from './src/routes/authRoutes.js';
 import productRoutes from './src/routes/productRoutes.js';
 import caixaRoutes from './src/routes/caixaRoutes.js';
 import debugRoutes from './src/routes/debugRoutes.js';
+import vendaRoutes from './src/routes/vendaRoutes.js';
+
+// Middleware de erro
+import { errorHandler } from './src/middleware/errorMiddleware.js';
 
 const app = express();
 
 // Hardening básico
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-}));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 // Rate limit (produção)
 const isProd = process.env.NODE_ENV === 'production';
@@ -31,69 +36,70 @@ const authLimiter = isProd
       standardHeaders: true,
       legacyHeaders: false,
       message: {
-        message: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.'
-      }
+        message: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+      },
     })
   : (req, res, next) => next();
 
 // CORS
-const allowedOrigins = new Set([FRONTEND_URL, 'http://localhost:5173', ...(CORS_ORIGINS || [])]);
+const allowedOrigins = new Set([
+  FRONTEND_URL,
+  'http://localhost:5173',
+  ...(CORS_ORIGINS || []),
+]);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // Postman/curl
-    if (allowedOrigins.has(origin)) return callback(null, true);
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // Postman/Thunder Client/curl
+      if (allowedOrigins.has(origin)) return callback(null, true);
 
-    try {
-      const host = new URL(origin).host;
-      if (host.endsWith('.vercel.app')) return callback(null, true);
-    } catch (_) {}
+      try {
+        const host = new URL(origin).host;
+        if (host.endsWith('.vercel.app')) return callback(null, true);
+      } catch (_) {}
 
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true
-}));
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 
-// Static uploads (pode manter; não atrapalha)
+// Static uploads
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, 'src', 'uploads')));
 
-// Healthcheck simples
+// Healthcheck
 app.get('/api/health', (req, res) => {
   res.status(200).json({ success: true, message: 'API Clínica Vet OK' });
 });
 
-// Rotas
+// Rotas da API
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/caixa', caixaRoutes);
+app.use('/api/vendas', vendaRoutes);
 app.use('/api/debug', debugRoutes);
 
 // Servir frontend buildado (quando existir)
-const frontendDist = path.resolve(__dirname, "..", "frontend", "dist");
-const indexHtml = path.join(frontendDist, "index.html");
+const frontendDist = path.resolve(__dirname, '..', 'frontend', 'dist');
+const indexHtml = path.join(frontendDist, 'index.html');
 
 if (fs.existsSync(indexHtml)) {
   app.use(express.static(frontendDist));
 
-  app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) return next();
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
+    }
     res.sendFile(indexHtml);
   });
 }
 
-// 404 (rota não encontrada)
-app.use((req, res) => {
-  res.status(404).json({
-    error: `Rota não encontrada: ${req.method} ${req.originalUrl}`,
-    code: "not_found",
-  });
-});
-
-// Erros da aplicação (JSON)
+// Middleware global de erro (SEMPRE por último)
 app.use(errorHandler);
 
 export default app;
