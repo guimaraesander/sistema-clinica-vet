@@ -1,0 +1,204 @@
+/*
+ * Estilização para a página de criação de conta (FormCreatePage)
+ * Usando CSS Modules.
+*/
+
+/* --- LAYOUT PRINCIPAL --- */
+.pageContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+  font-family: 'Roboto', sans-serif;
+}
+
+.formWrapper {
+  background-color: #ffffff;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+}
+
+/* --- TIPOGRAFIA E TÍTULOS --- */
+.titleContainer {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.title {
+  color: #23395b; /* Azul Profissional */
+  font-size: 2rem;
+  font-weight: 700; /* Roboto-700 */
+  margin: 0;
+}
+
+.subtitle {
+  color: #2d2d36; /* Base */
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+
+.link {
+  color: #4b5b9d; /* Destaque */
+  text-decoration: none;
+  font-weight: 500; /* Roboto-500 */
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* --- ELEMENTOS DO FORMULÁRIO --- */
+.formRow {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.formRow .formGroup {
+  flex: 1;
+}
+
+.formGroup {
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #2d2d36;
+  font-weight: 500; /* Roboto-500 */
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid #a9b3b3; /* Neutro */
+  border-radius: 8px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: #4b5b9d; /* Destaque */
+  box-shadow: 0 0 0 3px rgba(75, 91, 157, 0.2);
+}
+
+.inputError {
+  border-color: #ff3547 !important; /* Error */
+}
+
+.inputError:focus {
+  box-shadow: 0 0 0 3px rgba(255, 53, 71, 0.2);
+}
+
+.errorMessage {
+  color: #ff3547; /* Error */
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.submitButton {
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #00D2FF, #3B82F6);
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 700; /* Roboto-700 */
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #23395b; /* Azul Profissional */
+  transform: translateY(-2px);
+}
+
+.submitButton:disabled {
+  background-color: #a9b3b3; /* Neutro */
+  cursor: not-allowed;
+}
+
+/* --- TELA DE SELEÇÃO DE TIPO DE CONTA --- */
+.selectionContainer {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.selectionButton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #00D2FF, #3B82F6);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.selectionButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #00D2FF, #3B82F6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.selectionButton:hover::before {
+  opacity: 1;
+}
+
+.selectionButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 210, 255, 0.3);
+}
+
+.selectionButton span {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 0.25rem;
+}
+
+/* --- RESPONSIVIDADE --- */
+@media (max-width: 600px) {
+  .formRow {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .formWrapper {
+    padding: 1.5rem;
+  }
+
+  .selectionContainer {
+    flex-direction: column;
+  }
+}

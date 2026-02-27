@@ -1,0 +1,21 @@
+.container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+}
+.toast {
+  background: #333;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  cursor: pointer;
+  max-width: 360px;
+}
+.success { background: #2e7d32; }
+.error { background: #c62828; }
+.info { background: #1565c0; }

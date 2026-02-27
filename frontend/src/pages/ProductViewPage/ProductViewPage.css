@@ -1,0 +1,268 @@
+/* DESKTOP */
+.principal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.titulo {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.principal .titulo p.textotitulo {
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 0.8em;
+  color: var(--professional-color);
+}
+
+.principal .titulo p span.pasta {
+  color: var(--text-muted);
+  font-weight: bold;
+  margin: 0 4px;
+}
+
+.conteudo {
+  display: flex;
+  width: 100%;
+  max-width: 1200px;
+  margin: 1rem auto;
+  gap: 2rem;
+  flex-direction: row;
+}
+
+.esquerda {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.esquerda .imagem-produto {
+  width: 90%;
+  max-width: 500px;
+  height: auto;
+  object-fit: contain;
+}
+
+/* SEÇÃO DE DADOS */
+.product-info-container {
+  flex: 1;
+  background-color: #F3F4F6;
+  border-radius: 0.8em;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid #D1D5DB;
+  /* --- CORREÇÃO ADICIONADA --- */
+  height: fit-content;
+}
+
+/* Cabeçalho */
+.product-header .product-title {
+  font-size: 1.5rem;
+  color: #111827;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 1rem;
+}
+
+.product-header .product-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #6B7280;
+  font-weight: 500;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.product-meta span {
+  display: flex;
+  align-items: center;  
+  gap: 0.5em;
+}
+
+/* Seção de Preço */
+.price-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.price-values {
+  display: flex;
+  flex-direction: column;
+}
+
+.old-price {
+  font-size: 1.3rem;
+  color: #6B7280;
+  text-decoration: line-through;
+}
+
+.current-price {
+  font-size: 2.4rem;
+  color: var(--success-color);
+  font-weight: bold;
+  line-height: 1.1;
+}
+
+.discount-badge {
+  background-color: var(--success-color);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
+/* Opções de Pagamento */
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.payment-option .pix-icon { color: #00B686; font-size: 1rem; }
+.payment-option .card-icon { color: goldenrod; font-size: 1rem; }
+
+/* Botões de Ação */
+.action-buttons {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  align-items: center; 
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.action-buttons .comprar-agora,
+.action-buttons .add-carrinho {
+  width: 100%;
+}
+
+/* Calculadora de Frete */
+.shipping-calculator {
+  background-color: #E5E7EB;
+  border-radius: 8px;
+  padding: 0.5rem;
+  /* width: 100%;
+  height: 80%; */
+}
+
+.shipping-calculator h4 {
+  font-size: 0.9em;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #1F2937;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shipping-input-group {
+  display: flex;
+  align-items: stretch;
+  gap: 5px;
+  /* width: 100%;
+  height: 50px; */
+}
+
+.shipping-input-group input {
+  flex-grow: 1;
+}
+
+.shipping-input-group input::placeholder {
+  color: #9CA3AF;
+}
+
+
+.shipping-result {
+  margin-top: 1rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* RESPONSIVIDADE */
+@media (max-width: 1024px) {
+  .principal {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .principal {
+    padding: 1rem;
+    min-height: auto;
+  }
+
+  .conteudo {
+    flex-direction: column;
+    width: 100%; 
+    padding: 0; 
+  }
+  .esquerda, .product-info-container {
+    width: 100%;
+    margin: 0;
+  }
+  .product-info-container {
+    margin-top: 2rem;
+  }
+  .current-price {
+    font-size: 2.2rem;
+  }
+  .product-header .product-title {
+    font-size: 1.5rem;
+  }
+  .product-header .product-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .action-buttons button,
+  .action-buttons .comprar-agora,
+  .action-buttons .add-carrinho {
+    width: 100% !important;
+    min-height: 50px;
+    font-size: 1rem;
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .shipping-input-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .shipping-input-group input,
+  .shipping-input-group .botao-ok { 
+    width: 100% !important;
+    min-height: 45px;
+    font-size: 1rem;
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+  }
+}
+

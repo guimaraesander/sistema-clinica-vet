@@ -1,0 +1,60 @@
+/* ProductListing Component Styles */
+
+.product-listing-container {
+  column-count: 3;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+  width: auto;
+  /* border: 8px solid red; */
+  overflow-y: hidden;
+  justify-content: space-around;  
+  background-color: var(--background-color);
+}
+
+/*.content-limit {
+
+
+}*/
+
+@media (max-width: 1400px) {
+  .product-listing-container {
+    gap: 20px;
+  }
+}
+
+@media (max-width: 460px) {
+  .product-listing-container {
+    gap: 15px;
+    justify-content: space-around;
+  }
+}
+
+@media (min-width: 1400px) {
+
+   body {
+    font-size: 18px; /* fonte um pouco maior */
+    max-width: 3840px; /* mais espaço para o layout */
+  }
+  .content-limit {
+    max-width: max-content;
+    max-height: max-content;
+  }
+  .product-card {
+  display: flex;
+  flex-direction: column;
+  align-items:center;
+  overflow-y: hidden; /*Vini-Bugador: evita que os cards passem a tela igual desgraçados*/
+  gap: 15px;
+  padding: 5%; 
+  width: 250px;
+  /*border: 8px solid red;*/
+  max-width: 500px;
+  height: 500px;
+  max-height: 939px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  overflow-x: hidden;
+}
+}

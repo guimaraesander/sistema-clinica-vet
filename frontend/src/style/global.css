@@ -1,0 +1,220 @@
+/* Importação da fonte Roboto do Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap');
+
+:root {
+  /* Paleta de Cores Tecnobits - Modern Tech Design System */
+  --base-color: #1A1D29;          /* Azul muito escuro - sofisticado */
+  --professional-color: #1E293B;   /* Slate escuro - confiança */
+  --highlight-color: #00D2FF;      /* Ciano vibrante - inovação */
+  --neutral-color: #64748B;        /* Slate médio - versatilidade */
+  --background-color: #F1F5F9;     /* Slate muito claro - limpeza */
+
+  /* Estados e Feedback */
+  --success-color: #10B981;        /* Verde esmeralda - confirmação */
+  --warning-color: #F59E0B;        /* Âmbar - alerta */
+  --error-color: #EF4444;          /* Vermelho coral - erro */
+
+  /* Cores de Texto */
+  --text-primary: #1A1D29;         /* Texto principal */
+  --text-secondary: #334155;       /* Texto secundário */
+  --text-muted: #64748B;           /* Texto esmaecido */
+  --text-white: #FFFFFF;           /* Texto branco */
+  --text-light: #E2E8F0;           /* Texto claro sobre fundos escuros */
+
+  /* Gradientes Modernos */
+  --gradient-primary: linear-gradient(135deg, #00D2FF, #3B82F6);
+  --gradient-secondary: linear-gradient(135deg, #1A1D29,  #1461c7, #00D2FF);
+  --gradient-accent: linear-gradient(135deg, #FF6B35, #F59E0B);
+  --gradient-success: linear-gradient(135deg, #10B981, #059669);
+  --gradient-hero: linear-gradient(135deg, #1E293B 0%, #334155 50%, #F1F5F9 100%);
+  --gradient-dynamic: linear-gradient(135deg, #00D2FF, #3B82F6, #8B5CF6);
+
+  /* Aliases para compatibilidade com componentes existentes */
+  --primary-color: var(--highlight-color);
+  --white: var(--text-white);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Roboto', sans-serif; /* Fonte principal do Design System */
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.6;
+  font-weight: 400; /* Roboto-400 para textos descritivos */
+}
+
+/* Tipografia - Design System Tecnobits */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700; /* Roboto-700 para títulos */
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.price, .highlight-text {
+  font-weight: 700; /* Roboto-700 para preços */
+  color: var(--highlight-color);
+}
+
+.label, .specification {
+  font-weight: 500; /* Roboto-500 para especificações e labels */
+  color: var(--text-secondary);
+}
+
+.product-code, .code {
+  font-family: 'Roboto Mono', monospace; /* Roboto Mono para códigos */
+  font-weight: 400;
+  background-color: var(--neutral-color);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-success {
+  color: var(--success-color);
+}
+
+.text-warning {
+  color: var(--warning-color);
+}
+
+.text-error {
+  color: var(--error-color);
+}
+
+html {
+  min-height: 100%;
+  background-color: var(--background-color);
+}
+
+/* Estilos base para botões */
+.btn-primary,
+.btn-secondary,
+.btn-shop,
+.btn-icon {
+  color: var(--text-white);
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 1;
+  border: none;
+}
+
+.btn-primary {
+  background: var(--gradient-primary);
+  /*border: 2px solid transparent;*/
+  border: none;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gradient-secondary);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.btn-primary:hover::before {
+  opacity: 1;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(99, 133, 141, 0.3);
+}
+
+.btn-secondary {
+  background: var(--gradient-primary);
+  
+  border: none; /* vini: o problema das bordas era culpa da linha de cima... que ela queime nas profundesas do inferno! */
+}
+
+.btn-secondary:hover {
+  background: var(--gradient-secondary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 210, 255, 0.3);
+}
+
+.btn-shop {
+  background: var(--gradient-success);
+  border: 2px solid transparent;
+}
+
+.btn-shop:hover {
+  background: var(--gradient-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+}
+
+.btn-icon {
+  background-color: transparent;
+  border: 2px solid var(--neutral-color);
+  color: var(--text-primary);
+  padding: 0.5rem;
+}
+
+.btn-icon:hover {
+  background: var(--gradient-primary);
+  border-color: transparent;
+  color: var(--text-white);
+  transform: translateY(-2px);
+}
+
+/* Garantir que o texto dos botões fique visível */
+.btn-primary *,
+.btn-secondary *,
+.btn-shop *,
+.btn-icon * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Texto direto nos botões também precisa de z-index */
+.btn-primary,
+.btn-secondary,
+.btn-shop,
+.btn-icon {
+  color: var(--text-white);
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+input, textarea, button, a, ul {
+  text-decoration: none;
+  list-style: none;
+  outline: none;
+  border: none;
+}

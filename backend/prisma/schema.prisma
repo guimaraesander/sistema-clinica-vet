@@ -1,0 +1,275 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CaixaStatus {
+  ABERTO
+  FECHADO
+}
+
+enum CaixaMovTipo {
+  SANGRIA
+  SUPRIMENTO
+}
+
+enum VendaStatus {
+  FINALIZADA
+  PENDENTE
+  CANCELADA
+}
+
+enum FormaPagamento {
+  DINHEIRO
+  CARTAO
+  PIX
+  TRANSFERENCIA
+}
+
+enum EstoqueMovTipo {
+  ENTRADA
+  SAIDA
+  AJUSTE
+}
+
+enum EstoqueMovOrigem {
+  VENDA
+  CANCELAMENTO
+  INVENTARIO
+  MANUAL
+}
+
+enum ReceberStatus {
+  ABERTO
+  PARCIAL
+  PAGO
+  CANCELADO
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  nome      String
+  email     String   @unique
+  senhaHash String
+  perfil    String   // ADMIN | CAIXA | ESTOQUE
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  caixasAbertos     Caixa[]             @relation("CaixaAbertura")
+  caixasFechados    Caixa[]             @relation("CaixaFechamento")
+  vendas            Venda[]             @relation("VendaUsuario")
+  vendasCanceladas  Venda[]             @relation("VendaCanceladaPor")
+  caixaMovimentos   CaixaMov[]
+  pagamentos        Pagamento[]
+  estoqueMovs       EstoqueMov[]
+  receberPagamentos ReceberPagamento[]
+}
+
+model Cliente {
+  id        String   @id @default(cuid())
+  nome      String
+  cpf       String?  @db.VarChar(14)
+  telefone  String?  @db.VarChar(20)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  vendas  Venda[]
+  titulos ReceberTitulo[]
+}
+
+model Produto {
+  id         String   @id @default(cuid())
+  codigo     String   @unique
+  nome       String
+  categoria  String?
+  precoVenda Decimal  @db.Decimal(12, 2)
+  custo      Decimal? @db.Decimal(12, 2)
+  estoqueMin Int      @default(0)
+  ativo      Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  estoqueSaldo EstoqueSaldo?
+  itensVenda   VendaItem[]
+  estoqueMovs  EstoqueMov[]
+}
+
+model EstoqueSaldo {
+  produtoId  String   @id
+  produto    Produto  @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  quantidade Int      @default(0)
+  updatedAt  DateTime @updatedAt
+}
+
+model Caixa {
+  id                  String      @id @default(cuid())
+  status              CaixaStatus @default(ABERTO)
+  abertoEm            DateTime    @default(now())
+  fechadoEm           DateTime?
+  valorInicial        Decimal     @db.Decimal(12, 2)
+
+  usuarioAberturaId   String
+  usuarioAbertura     Usuario     @relation("CaixaAbertura", fields: [usuarioAberturaId], references: [id])
+
+  usuarioFechamentoId String?
+  usuarioFechamento   Usuario?    @relation("CaixaFechamento", fields: [usuarioFechamentoId], references: [id])
+
+  movimentos        CaixaMov[]
+  vendas            Venda[]
+  pagamentos        Pagamento[]
+  receberPagamentos ReceberPagamento[]
+}
+
+model CaixaMov {
+  id      String       @id @default(cuid())
+  caixaId String
+  caixa   Caixa        @relation(fields: [caixaId], references: [id], onDelete: Cascade)
+  tipo    CaixaMovTipo
+  valor   Decimal      @db.Decimal(12, 2)
+  motivo  String
+
+  usuarioId String
+  usuario   Usuario    @relation(fields: [usuarioId], references: [id])
+
+  data DateTime @default(now())
+}
+
+model Venda {
+  id       String      @id @default(cuid())
+  caixaId  String
+  caixa    Caixa       @relation(fields: [caixaId], references: [id])
+
+  clienteId String?
+  cliente   Cliente?   @relation(fields: [clienteId], references: [id])
+
+  status VendaStatus @default(FINALIZADA)
+  data   DateTime    @default(now())
+
+  usuarioId String
+  usuario   Usuario   @relation("VendaUsuario", fields: [usuarioId], references: [id])
+
+  totalBruto    Decimal @db.Decimal(12, 2)
+  descontoTotal Decimal @db.Decimal(12, 2) @default(0)
+  totalLiquido  Decimal @db.Decimal(12, 2)
+
+  pagoNoAto  Decimal @db.Decimal(12, 2) @default(0)
+  fiadoValor Decimal @db.Decimal(12, 2) @default(0)
+
+  canceladaEm     DateTime?
+  canceladaMotivo String?
+
+  canceladaPorId String?
+  canceladaPor   Usuario? @relation("VendaCanceladaPor", fields: [canceladaPorId], references: [id])
+
+  itens         VendaItem[]
+  pagamentos    Pagamento[]
+  tituloReceber ReceberTitulo?
+  estoqueMovs   EstoqueMov[] @relation("VendaEstoqueMov")
+
+  @@index([data])
+  @@index([status])
+}
+
+model VendaItem {
+  id      String @id @default(cuid())
+  vendaId String
+  venda   Venda  @relation(fields: [vendaId], references: [id], onDelete: Cascade)
+
+  produtoId String
+  produto   Produto @relation(fields: [produtoId], references: [id])
+
+  descricaoCache String
+  qtd           Int
+  precoUnit     Decimal @db.Decimal(12, 2)
+  descontoItem  Decimal @db.Decimal(12, 2) @default(0)
+  subtotal      Decimal @db.Decimal(12, 2)
+
+  @@index([produtoId])
+}
+
+model Pagamento {
+  id     String @id @default(cuid())
+  caixaId String
+  caixa   Caixa  @relation(fields: [caixaId], references: [id])
+
+  vendaId String?
+  venda   Venda? @relation(fields: [vendaId], references: [id])
+
+  receberPagamentoId String?            @unique
+  receberPagamento   ReceberPagamento?  @relation(fields: [receberPagamentoId], references: [id])
+
+  forma FormaPagamento
+  valor Decimal        @db.Decimal(12, 2)
+  data  DateTime       @default(now())
+
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([data])
+  @@index([forma])
+}
+
+model EstoqueMov {
+  id       String  @id @default(cuid())
+  produtoId String
+  produto   Produto @relation(fields: [produtoId], references: [id])
+
+  tipo   EstoqueMovTipo
+  origem EstoqueMovOrigem
+  qtd    Int
+
+  refVendaId String?
+  refVenda   Venda? @relation("VendaEstoqueMov", fields: [refVendaId], references: [id])
+
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  data DateTime @default(now())
+  obs  String?
+
+  @@index([data])
+  @@index([produtoId, data])
+}
+
+model ReceberTitulo {
+  id       String  @id @default(cuid())
+  clienteId String
+  cliente   Cliente @relation(fields: [clienteId], references: [id])
+
+  vendaId String @unique
+  venda   Venda  @relation(fields: [vendaId], references: [id])
+
+  valorTotal Decimal       @db.Decimal(12, 2)
+  valorPago  Decimal       @db.Decimal(12, 2) @default(0)
+  status     ReceberStatus @default(ABERTO)
+  vencimento DateTime
+  criadoEm   DateTime      @default(now())
+
+  pagamentos ReceberPagamento[]
+
+  @@index([status])
+  @@index([vencimento])
+}
+
+model ReceberPagamento {
+  id      String @id @default(cuid())
+  tituloId String
+  titulo   ReceberTitulo @relation(fields: [tituloId], references: [id], onDelete: Cascade)
+
+  caixaId String
+  caixa   Caixa  @relation(fields: [caixaId], references: [id])
+
+  forma FormaPagamento
+  valor Decimal        @db.Decimal(12, 2)
+  data  DateTime       @default(now())
+
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  pagamentoCaixa Pagamento?
+
+  @@index([data])
+}

@@ -1,0 +1,203 @@
+.container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 2rem;
+    font-family: sans-serif;
+    color: #333;
+}
+
+.backLink {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.backLink:hover {
+    text-decoration: underline;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 2rem;
+}
+
+/* Grid com os resumos */
+.summaryGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.summaryCard {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.summaryCard .icon {
+    font-size: 1.5rem;
+    color: #007bff;
+    margin-bottom: 0.5rem;
+}
+
+.summaryCard strong {
+    font-weight: 600;
+    color: #343a40;
+}
+
+.summaryCard span {
+    color: #6c757d;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+.tagAwaiting { background: #fff3cd; color: #7a5b00; border-color: #ffecb5; }
+.tagPaid { background: #e0f7fa; color: #006064; border-color: #b2ebf2; }
+.tagPreparing { background: #e8f0fe; color: #1a73e8; border-color: #c6dafc; }
+.tagShipped { background: #e3f2fd; color: #0d47a1; border-color: #bbdefb; }
+.tagDelivered { background: #e6f4ea; color: #1e7e34; border-color: #c7e8cf; }
+.tagCanceled { background: #fdecea; color: #b00020; border-color: #f5c2c7; }
+.tagReturned { background: #f3e8ff; color: #6a1b9a; border-color: #e1bee7; }
+
+/* Seção dos itens */
+.itemsSection {
+    background-color: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 2rem;
+}
+
+.sectionTitle {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.itemsList {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.itemCard {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.itemImage {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0; /* Impede que a imagem encolha */
+}
+
+.itemDetails {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Permite que o container encolha e o texto quebre a linha */
+}
+
+.itemName {
+    font-weight: 600;
+    color: #343a40;
+    word-break: break-word; /* Garante que o nome do produto quebre a linha */
+}
+
+.itemQuantity {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.itemPrice {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #495057;
+    white-space: nowrap; /* Impede que o preço quebre a linha */
+}
+
+.totalSection {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #dee2e6;
+    font-size: 1.2rem;
+    font-weight: bold;
+    gap: 1rem;
+}
+
+.totalPrice {
+    color: #28a745;
+}
+
+.errorBox {
+    margin: 1rem 0 0.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid #f5c2c7;
+    background: #fdecea;
+    color: #842029;
+    border-radius: 6px;
+}
+
+.cancelButton {
+    margin: 0.5rem 0 2rem;
+    padding: 0.75rem 1.25rem;
+    background-color: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.cancelButton:hover {
+    background-color: #c82333;
+}
+
+.cancelButton:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* --- REGRAS DE RESPONSIVIDADE --- */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    .title {
+        font-size: 1.5rem;
+    }
+    .itemsSection, .summaryCard {
+        padding: 1.5rem;
+    }
+    .itemCard {
+        gap: 1rem;
+    }
+    .itemImage {
+        width: 60px;
+        height: 60px;
+    }
+}

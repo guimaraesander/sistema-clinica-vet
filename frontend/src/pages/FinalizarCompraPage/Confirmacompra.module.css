@@ -1,0 +1,219 @@
+/* TECNOBITS - FORMULARIOS / PÁGINAS INTERNAS */
+:root {
+  --primary-color: #F6AA1C;
+  --danger-color: #cf0808;
+  --background-light: #FFFFFF;
+  --background-medium: #F1F5F9;
+  --input-background: #dfd7d7;
+  --text-color: var(--text-primary);
+  --text-light: var(--text-muted);
+  --border-radius: 8px;
+}
+
+/* Layout principal */
+.container {
+  display: flex;
+  background-color: #F1F5F9;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: var(--background-medium);
+  gap: 20px;
+}
+
+.mainContent {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+}
+
+.formsColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 2;
+  min-width: 300px;
+}
+
+.summaryColumn {
+  flex: 1;
+  min-width: 300px;
+}
+
+/* Seções do formulário */
+.formSection {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background-light);
+  padding: 30px;
+  gap: 20px;
+  border-radius: var(--border-radius);
+}
+
+.formSection h4 {
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 15px;
+  margin-top: 0;
+}
+
+.formSection label {
+  font-weight: bold;
+}
+
+.formSection input[type="text"] {
+  width: 100%;
+  height: 60px;
+  background-color: var(--input-background);
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 0 15px;
+  font-size: 16px;
+}
+
+.formSection input::placeholder {
+  color: var(--text-light);
+  font-size: 14px;
+}
+
+/* Opções de pagamento */
+.paymentOptions {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.paymentOptions input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--error-color);
+  appearance: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.paymentOptions input[type="radio"]:checked {
+  background-color: var(--error-color);
+}
+
+/* Linha horizontal de inputs */
+.row {
+  display: flex;
+  gap: 20px;
+}
+
+.row > div {
+  flex: 1;
+}
+
+/* Resumo do pedido */
+.orderSummary {
+  background-color: var(--background-light);
+  border-radius: var(--border-radius);
+  padding: 30px;
+  border: 1px solid #e5e7eb; /* borda sutil para separar do fundo */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06); /* cartão elevado suave */
+  position: sticky;
+  top: 20px;
+}
+
+.orderSummary h4 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  letter-spacing: 0.3px;
+  color: var(--text-color);
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eceff3;
+}
+
+.summaryLine {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: var(--text-color);
+}
+
+.summaryLine span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summaryLine span:last-child {
+  font-weight: 600;
+}
+
+.summaryTotal {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  font-size: 20px;
+  padding: 14px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-top: 18px;
+  background: #fafbfc;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.04) inset;
+}
+
+.summaryButton {
+  width: 100%;
+  height: 60px;
+  background-color: var(--highlight-color); /* Usa o mesmo ciano do Design System */
+  border-radius: var(--border-radius);
+  color: var(--text-white);
+  font-weight: 700;
+  font-size: 18px;
+  border: none;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: all 0.3s ease;
+}
+
+.summaryButton:hover {
+  background: var(--gradient-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 210, 255, 0.3);
+}
+
+.orderSummary hr {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+  margin: 10px 0 12px 0;
+}
+
+@media (max-width: 768px) {
+  .orderSummary {
+    padding: 20px;
+    top: 10px;
+  }
+
+  .summaryTotal {
+    font-size: 18px;
+  }
+
+  .formsColumn {
+    gap: 16px;
+  }
+
+  .formSection {
+    padding: 20px;
+  }
+}
+
+/* Feedback visual de erro */
+.erroMensagem {
+  color: var(--error-color);
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.erroInput {
+  border: 1px solid var(--error-color);
+}
