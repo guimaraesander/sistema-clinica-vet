@@ -1,71 +1,5 @@
 import prisma from "../config/prisma.js";
-
-export async function abrirCaixaService({ usuarioId, valorInicial }) {
-  const valor = Number(valorInicial);
-
-  if (!usuarioId) {
-    const err = new Error("usuarioId é obrigatório.");
-    err.statusCode = 400;
-    throw err;
-  }
-
-  if (Number.isNaN(valor) || valor < 0) {
-    const err = new Error("valorInicial deve ser um número maior ou igual a 0.");
-    err.statusCode = 400;
-    throw err;
-  }
-
-  // Verifica se já existe caixa aberto
-  const caixaAberto = await prisma.caixa.findFirst({
-    where: { status: "ABERTO" },
-    orderBy: { abertoEm: "desc" },
-  });
-
-  if (caixaAberto) {
-    const err = new Error("Já existe um caixa aberto.");
-    err.statusCode = 409;
-    throw err;
-  }
-
-  // Confirma usuário
-  const usuario = await prisma.usuario.findUnique({
-    where: { id: usuarioId },
-    select: { id: true, nome: true, perfil: true, ativo: true },
-  });
-
-  if (!usuario) {
-    const err = new Error("Usuário não encontrado.");
-    err.statusCode = 404;
-    throw err;
-  }
-
-  if (!usuario.ativo) {
-    const err = new Error("Usuário está inativo.");
-    err.statusCode = 400;
-    throw err;
-  }
-
-  const caixa = await prisma.caixa.create({
-    data: {
-      usuarioAberturaId: usuarioId,
-      valorInicial: valor,
-      status: "ABERTO",
-    },
-    include: {
-      usuarioAbertura: {
-        select: { id: true, nome: true, perfil: true },
-      },
-    },
-  });
-
-  return {
-    id: caixa.id,
-    status: caixa.status,
-    abertoEm: caixa.abertoEm,
-    valorInicial: Number(caixa.valorInicial),
-    usuarioAbertura: caixa.usuarioAbertura,
-  };
-}
+import { AppError } from "../utils/AppError.js";
 
 export async function obterCaixaAtualService() {
   const caixa = await prisma.caixa.findFirst({
@@ -78,9 +12,7 @@ export async function obterCaixaAtualService() {
     },
   });
 
-  if (!caixa) {
-    return null;
-  }
+  if (!caixa) return null;
 
   return {
     id: caixa.id,
@@ -92,42 +24,128 @@ export async function obterCaixaAtualService() {
   };
 }
 
+export async function abrirCaixaService({ usuarioId, valorInicial }) {
+  if (!usuarioId) {
+    throw new AppError("usuarioId é obrigatório.", 400, "request_error");
+  }
+
+  if (valorInicial === undefined || valorInicial === null) {
+    throw new AppError("valorInicial é obrigatório.", 400, "request_error");
+  }
+
+  const usuario = await prisma.usuario.findFirst({
+    where: { id: usuarioId, ativo: true },
+    select: { id: true, nome: true, perfil: true, email: true },
+  });
+
+  if (!usuario) {
+    throw new AppError("Usuário não encontrado.", 404, "request_error");
+  }
+
+  const jaAberto = await prisma.caixa.findFirst({
+    where: { status: "ABERTO" },
+    select: { id: true },
+  });
+
+  if (jaAberto) {
+    throw new AppError("Já existe um caixa aberto.", 409, "request_error");
+  }
+
+  const caixa = await prisma.caixa.create({
+    data: {
+      usuarioAberturaId: usuarioId,
+      valorInicial: Number(valorInicial),
+      status: "ABERTO",
+    },
+    include: {
+      usuarioAbertura: {
+        select: { id: true, nome: true, perfil: true, email: true },
+      },
+    },
+  });
+
+  return {
+    id: caixa.id,
+    status: caixa.status,
+    abertoEm: caixa.abertoEm,
+    fechadoEm: caixa.fechadoEm,
+    valorInicial: Number(caixa.valorInicial),
+    usuarioAbertura: caixa.usuarioAbertura,
+  };
+}
+
+export async function obterResumoCaixaService({ caixaId }) {
+  if (!caixaId) {
+    throw new AppError("caixaId é obrigatório.", 400, "request_error");
+  }
+
+  const caixa = await prisma.caixa.findUnique({
+    where: { id: caixaId },
+    select: {
+      id: true,
+      status: true,
+      abertoEm: true,
+      fechadoEm: true,
+      valorInicial: true,
+    },
+  });
+
+  if (!caixa) {
+    throw new AppError("Caixa não encontrado.", 404, "request_error");
+  }
+
+  const vendasAgg = await prisma.venda.aggregate({
+    where: { caixaId },
+    _count: { id: true },
+    _sum: {
+      totalBruto: true,
+      descontoTotal: true,
+      totalLiquido: true,
+    },
+  });
+
+  return {
+    caixa: {
+      id: caixa.id,
+      status: caixa.status,
+      abertoEm: caixa.abertoEm,
+      fechadoEm: caixa.fechadoEm,
+      valorInicial: Number(caixa.valorInicial),
+    },
+    vendas: {
+      quantidade: vendasAgg._count.id || 0,
+      totalBruto: Number(vendasAgg._sum.totalBruto || 0),
+      descontoTotal: Number(vendasAgg._sum.descontoTotal || 0),
+      totalLiquido: Number(vendasAgg._sum.totalLiquido || 0),
+    },
+  };
+}
+
 export async function fecharCaixaService({ usuarioFechamentoId }) {
   if (!usuarioFechamentoId) {
-    const err = new Error("usuarioFechamentoId é obrigatório.");
-    err.statusCode = 400;
-    throw err;
+    throw new AppError("usuarioFechamentoId é obrigatório.", 400, "request_error");
+  }
+
+  const usuario = await prisma.usuario.findFirst({
+    where: { id: usuarioFechamentoId, ativo: true },
+    select: { id: true, nome: true, perfil: true, email: true },
+  });
+
+  if (!usuario) {
+    throw new AppError("Usuário de fechamento não encontrado.", 404, "request_error");
   }
 
   const caixaAberto = await prisma.caixa.findFirst({
     where: { status: "ABERTO" },
     orderBy: { abertoEm: "desc" },
+    select: { id: true },
   });
 
   if (!caixaAberto) {
-    const err = new Error("Não existe caixa aberto para fechamento.");
-    err.statusCode = 409;
-    throw err;
+    throw new AppError("Nenhum caixa aberto no momento.", 409, "request_error");
   }
 
-  const usuario = await prisma.usuario.findUnique({
-    where: { id: usuarioFechamentoId },
-    select: { id: true, nome: true, perfil: true, ativo: true },
-  });
-
-  if (!usuario) {
-    const err = new Error("Usuário de fechamento não encontrado.");
-    err.statusCode = 404;
-    throw err;
-  }
-
-  if (!usuario.ativo) {
-    const err = new Error("Usuário de fechamento está inativo.");
-    err.statusCode = 400;
-    throw err;
-  }
-
-  const caixaFechado = await prisma.caixa.update({
+  const fechado = await prisma.caixa.update({
     where: { id: caixaAberto.id },
     data: {
       status: "FECHADO",
@@ -144,13 +162,16 @@ export async function fecharCaixaService({ usuarioFechamentoId }) {
     },
   });
 
+  const resumo = await obterResumoCaixaService({ caixaId: fechado.id });
+
   return {
-    id: caixaFechado.id,
-    status: caixaFechado.status,
-    abertoEm: caixaFechado.abertoEm,
-    fechadoEm: caixaFechado.fechadoEm,
-    valorInicial: Number(caixaFechado.valorInicial),
-    usuarioAbertura: caixaFechado.usuarioAbertura,
-    usuarioFechamento: caixaFechado.usuarioFechamento,
+    id: fechado.id,
+    status: fechado.status,
+    abertoEm: fechado.abertoEm,
+    fechadoEm: fechado.fechadoEm,
+    valorInicial: Number(fechado.valorInicial),
+    usuarioAbertura: fechado.usuarioAbertura,
+    usuarioFechamento: fechado.usuarioFechamento,
+    resumo,
   };
 }
