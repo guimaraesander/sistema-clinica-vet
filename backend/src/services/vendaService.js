@@ -114,7 +114,12 @@ export async function criarVendaService({ usuarioId, itens }) {
 
   const produtos = await prisma.produto.findMany({
     where: { id: { in: produtoIds } },
-    include: { estoqueSaldo: true },
+    select: {
+      id: true,
+      codigo: true,
+      nome: true,
+      precoVenda: true,
+    },
   });
 
   if (produtos.length !== produtoIds.length) {
@@ -148,16 +153,6 @@ export async function criarVendaService({ usuarioId, itens }) {
 
   const itensParaCriar = itensConsolidados.map((item) => {
     const produto = produtoMap.get(item.produtoId);
-    const estoqueAtual = produto?.estoqueSaldo?.quantidade ?? 0;
-
-    if (estoqueAtual < item.quantidade) {
-      throw new AppError(
-        `Estoque insuficiente para "${produto.nome}". Disponível: ${estoqueAtual}, solicitado: ${item.quantidade}.`,
-        409,
-        "request_error"
-      );
-    }
-
     const precoUnitario = Number(produto.precoVenda);
     const subtotal = precoUnitario * item.quantidade;
     totalVenda += subtotal;
@@ -210,14 +205,29 @@ export async function criarVendaService({ usuarioId, itens }) {
         },
       });
 
-      await tx.estoqueSaldo.update({
-        where: { produtoId: item.produtoId },
+      const baixaEstoque = await tx.estoqueSaldo.updateMany({
+        where: {
+          produtoId: item.produtoId,
+          quantidade: { gte: item.quantidade },
+        },
         data: {
-          quantidade: {
-            decrement: item.quantidade,
-          },
+          quantidade: { decrement: item.quantidade },
         },
       });
+
+      if (baixaEstoque.count === 0) {
+        const saldoAtual = await tx.estoqueSaldo.findUnique({
+          where: { produtoId: item.produtoId },
+          select: { quantidade: true },
+        });
+
+        const disponivel = saldoAtual?.quantidade ?? 0;
+        throw new AppError(
+          `Estoque insuficiente para "${item.produtoNome}". Disponível: ${disponivel}, solicitado: ${item.quantidade}.`,
+          409,
+          "request_error"
+        );
+      }
 
       if (estoqueMovModel) {
         await estoqueMovModel.create({
@@ -499,3 +509,4 @@ export async function registrarPagamentoVendaService({
     },
   };
 }
+
