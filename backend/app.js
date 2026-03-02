@@ -1,6 +1,5 @@
 import express from 'express';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cors from 'cors';
@@ -8,8 +7,6 @@ import fs from 'fs';
 
 import { FRONTEND_URL, CORS_ORIGINS } from './src/config/env.js';
 
-// Rotas
-import authRoutes from './src/routes/authRoutes.js';
 import productRoutes from './src/routes/productRoutes.js';
 import caixaRoutes from './src/routes/caixaRoutes.js';
 import debugRoutes from './src/routes/debugRoutes.js';
@@ -26,20 +23,6 @@ app.use(
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
-
-// Rate limit (produção)
-const isProd = process.env.NODE_ENV === 'production';
-const authLimiter = isProd
-  ? rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 100,
-      standardHeaders: true,
-      legacyHeaders: false,
-      message: {
-        message: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-      },
-    })
-  : (req, res, next) => next();
 
 // CORS
 const allowedOrigins = new Set([
@@ -78,7 +61,6 @@ app.get('/api/health', (req, res) => {
 });
 
 // Rotas da API
-app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/caixa', caixaRoutes);
 app.use('/api/vendas', vendaRoutes);

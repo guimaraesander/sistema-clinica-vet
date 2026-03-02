@@ -1,12 +1,29 @@
 import prisma from "../config/prisma.js";
 import { AppError } from "../utils/AppError.js";
 
-function toMoney(value) {
+function toNumber(value) {
   return Number(value || 0);
 }
 
 function roundMoney(value) {
-  return Number(toMoney(value).toFixed(2));
+  return Number(toNumber(value).toFixed(2));
+}
+
+function normalizeMoneyInput(value, fieldName) {
+  if (value === undefined || value === null || value === "") {
+    throw new AppError(`${fieldName} é obrigatório.`, 400, "request_error");
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    throw new AppError(`${fieldName} deve ser numérico.`, 400, "request_error");
+  }
+
+  if (parsed < 0) {
+    throw new AppError(`${fieldName} não pode ser negativo.`, 400, "request_error");
+  }
+
+  return roundMoney(parsed);
 }
 
 export async function obterCaixaAtualService() {
@@ -27,25 +44,17 @@ export async function obterCaixaAtualService() {
     status: caixa.status,
     abertoEm: caixa.abertoEm,
     fechadoEm: caixa.fechadoEm,
-    valorInicial: toMoney(caixa.valorInicial),
+    valorInicial: Number(caixa.valorInicial),
     usuarioAbertura: caixa.usuarioAbertura,
   };
 }
 
 export async function abrirCaixaService({ usuarioId, valorInicial }) {
   if (!usuarioId) {
-    throw new AppError("usuarioId é obrigatório.", 400, "bad_request");
+    throw new AppError("usuarioId é obrigatório.", 400, "request_error");
   }
 
-  if (valorInicial === undefined || valorInicial === null) {
-    throw new AppError("valorInicial é obrigatório.", 400, "bad_request");
-  }
-
-  const valorInicialNumero = Number(valorInicial);
-
-  if (Number.isNaN(valorInicialNumero) || valorInicialNumero < 0) {
-    throw new AppError("valorInicial deve ser um número maior ou igual a zero.", 400, "bad_request");
-  }
+  const valorInicialNormalizado = normalizeMoneyInput(valorInicial, "valorInicial");
 
   const usuario = await prisma.usuario.findFirst({
     where: { id: usuarioId, ativo: true },
@@ -53,44 +62,51 @@ export async function abrirCaixaService({ usuarioId, valorInicial }) {
   });
 
   if (!usuario) {
-    throw new AppError("Usuário não encontrado.", 404, "not_found");
+    throw new AppError("Usuário não encontrado.", 404, "request_error");
   }
 
-  const jaAberto = await prisma.caixa.findFirst({
-    where: { status: "ABERTO" },
-    select: { id: true },
-  });
+  const caixa = await prisma.$transaction(
+    async (tx) => {
+      const jaAberto = await tx.caixa.findFirst({
+        where: { status: "ABERTO" },
+        select: { id: true },
+      });
 
-  if (jaAberto) {
-    throw new AppError("Já existe um caixa aberto.", 409, "conflict");
-  }
+      if (jaAberto) {
+        throw new AppError("Já existe um caixa aberto.", 409, "request_error");
+      }
 
-  const caixa = await prisma.caixa.create({
-    data: {
-      usuarioAberturaId: usuarioId,
-      valorInicial: valorInicialNumero,
-      status: "ABERTO",
+      return tx.caixa.create({
+        data: {
+          usuarioAberturaId: usuarioId,
+          valorInicial: valorInicialNormalizado,
+          status: "ABERTO",
+        },
+        include: {
+          usuarioAbertura: {
+            select: { id: true, nome: true, perfil: true, email: true },
+          },
+        },
+      });
     },
-    include: {
-      usuarioAbertura: {
-        select: { id: true, nome: true, perfil: true, email: true },
-      },
-    },
-  });
+    {
+      isolationLevel: "Serializable",
+    }
+  );
 
   return {
     id: caixa.id,
     status: caixa.status,
     abertoEm: caixa.abertoEm,
     fechadoEm: caixa.fechadoEm,
-    valorInicial: toMoney(caixa.valorInicial),
+    valorInicial: Number(caixa.valorInicial),
     usuarioAbertura: caixa.usuarioAbertura,
   };
 }
 
 export async function obterResumoCaixaService({ caixaId }) {
-  if (!caixaId) {
-    throw new AppError("caixaId é obrigatório.", 400, "bad_request");
+  if (!caixaId || !String(caixaId).trim()) {
+    throw new AppError("caixaId é obrigatório.", 400, "request_error");
   }
 
   const caixa = await prisma.caixa.findUnique({
@@ -105,7 +121,7 @@ export async function obterResumoCaixaService({ caixaId }) {
   });
 
   if (!caixa) {
-    throw new AppError("Caixa não encontrado.", 404, "not_found");
+    throw new AppError("Caixa não encontrado.", 404, "request_error");
   }
 
   const vendasAgg = await prisma.venda.aggregate({
@@ -123,29 +139,19 @@ export async function obterResumoCaixaService({ caixaId }) {
   const pagamentosAgg = await prisma.pagamento.aggregate({
     where: { caixaId },
     _count: { id: true },
-    _sum: {
-      valor: true,
-    },
+    _sum: { valor: true },
   });
 
   const pagamentosPorForma = await prisma.pagamento.groupBy({
     by: ["forma"],
     where: { caixaId },
     _sum: { valor: true },
-    _count: { _all: true },
   });
 
-  const pagamentos = {
-    quantidade: pagamentosAgg._count.id || 0,
-    total: toMoney(pagamentosAgg._sum.valor),
-    porForma: pagamentosPorForma.reduce((acc, item) => {
-      acc[item.forma] = {
-        quantidade: item._count._all || 0,
-        total: toMoney(item._sum.valor),
-      };
-      return acc;
-    }, {}),
-  };
+  const porForma = pagamentosPorForma.reduce((acc, item) => {
+    acc[item.forma] = roundMoney(item._sum.valor);
+    return acc;
+  }, {});
 
   return {
     caixa: {
@@ -153,57 +159,77 @@ export async function obterResumoCaixaService({ caixaId }) {
       status: caixa.status,
       abertoEm: caixa.abertoEm,
       fechadoEm: caixa.fechadoEm,
-      valorInicial: toMoney(caixa.valorInicial),
+      valorInicial: Number(caixa.valorInicial),
     },
     vendas: {
       quantidade: vendasAgg._count.id || 0,
-      totalBruto: toMoney(vendasAgg._sum.totalBruto),
-      descontoTotal: toMoney(vendasAgg._sum.descontoTotal),
-      totalLiquido: toMoney(vendasAgg._sum.totalLiquido),
-      pagoNoAto: toMoney(vendasAgg._sum.pagoNoAto),
-      fiadoValor: toMoney(vendasAgg._sum.fiadoValor),
+      totalBruto: roundMoney(vendasAgg._sum.totalBruto),
+      descontoTotal: roundMoney(vendasAgg._sum.descontoTotal),
+      totalLiquido: roundMoney(vendasAgg._sum.totalLiquido),
+      pagoNoAto: roundMoney(vendasAgg._sum.pagoNoAto),
+      fiadoValor: roundMoney(vendasAgg._sum.fiadoValor),
     },
-    pagamentos,
+    pagamentos: {
+      quantidade: pagamentosAgg._count.id || 0,
+      total: roundMoney(pagamentosAgg._sum.valor),
+      porForma,
+    },
   };
 }
 
-async function calcularConferenciaCaixa({ caixaId, valorInicial }) {
-  // Pagamentos em DINHEIRO entram no esperado do caixa físico
+async function calcularConferenciaCaixa({ caixaId, valorInicial, valorInformado }) {
   const pagamentosDinheiroAgg = await prisma.pagamento.aggregate({
     where: {
       caixaId,
       forma: "DINHEIRO",
     },
-    _sum: {
-      valor: true,
-    },
-  });
-
-  // Movimentos de caixa (se já existirem lançamentos)
-  const caixaMovsAgg = await prisma.caixaMov.groupBy({
-    by: ["tipo"],
-    where: { caixaId },
     _sum: { valor: true },
   });
 
-  let totalSangria = 0;
-  let totalSuprimento = 0;
+  const suprimentoAgg = await prisma.caixaMov.aggregate({
+    where: {
+      caixaId,
+      tipo: "SUPRIMENTO",
+    },
+    _sum: { valor: true },
+  });
 
-  for (const mov of caixaMovsAgg) {
-    if (mov.tipo === "SANGRIA") totalSangria = toMoney(mov._sum.valor);
-    if (mov.tipo === "SUPRIMENTO") totalSuprimento = toMoney(mov._sum.valor);
-  }
+  const sangriaAgg = await prisma.caixaMov.aggregate({
+    where: {
+      caixaId,
+      tipo: "SANGRIA",
+    },
+    _sum: { valor: true },
+  });
 
-  const totalDinheiroRecebido = toMoney(pagamentosDinheiroAgg._sum.valor);
+  const totalDinheiroRecebido = roundMoney(pagamentosDinheiroAgg._sum.valor);
+  const totalSuprimento = roundMoney(suprimentoAgg._sum.valor);
+  const totalSangria = roundMoney(sangriaAgg._sum.valor);
 
   const valorEsperado = roundMoney(
-    toMoney(valorInicial) + totalDinheiroRecebido + totalSuprimento - totalSangria
+    Number(valorInicial) + totalDinheiroRecebido + totalSuprimento - totalSangria
   );
+
+  const valorInformadoNormalizado =
+    valorInformado === undefined || valorInformado === null
+      ? null
+      : roundMoney(Number(valorInformado));
+
+  const diferenca =
+    valorInformadoNormalizado === null
+      ? null
+      : roundMoney(valorInformadoNormalizado - valorEsperado);
+
+  const houveDivergencia =
+    valorInformadoNormalizado === null ? false : diferenca !== 0;
 
   return {
     valorEsperado,
+    valorInformado: valorInformadoNormalizado,
+    diferenca,
+    houveDivergencia,
     componentes: {
-      valorInicial: toMoney(valorInicial),
+      valorInicial: roundMoney(valorInicial),
       totalDinheiroRecebido,
       totalSuprimento,
       totalSangria,
@@ -213,7 +239,15 @@ async function calcularConferenciaCaixa({ caixaId, valorInicial }) {
 
 export async function fecharCaixaService({ usuarioFechamentoId, valorInformado }) {
   if (!usuarioFechamentoId) {
-    throw new AppError("usuarioFechamentoId é obrigatório.", 400, "bad_request");
+    throw new AppError("usuarioFechamentoId é obrigatório.", 400, "request_error");
+  }
+
+  if (
+    valorInformado !== undefined &&
+    valorInformado !== null &&
+    Number.isNaN(Number(valorInformado))
+  ) {
+    throw new AppError("valorInformado deve ser numérico.", 400, "request_error");
   }
 
   const usuario = await prisma.usuario.findFirst({
@@ -222,16 +256,15 @@ export async function fecharCaixaService({ usuarioFechamentoId, valorInformado }
   });
 
   if (!usuario) {
-    throw new AppError("Usuário de fechamento não encontrado.", 404, "not_found");
+    throw new AppError("Usuário de fechamento não encontrado.", 404, "request_error");
   }
 
   const caixaAberto = await prisma.caixa.findFirst({
     where: { status: "ABERTO" },
     orderBy: { abertoEm: "desc" },
-    include: {
-      usuarioAbertura: {
-        select: { id: true, nome: true, perfil: true, email: true },
-      },
+    select: {
+      id: true,
+      valorInicial: true,
     },
   });
 
@@ -239,31 +272,12 @@ export async function fecharCaixaService({ usuarioFechamentoId, valorInformado }
     throw new AppError("Nenhum caixa aberto no momento.", 409, "conflict");
   }
 
-  // valorInformado é opcional por enquanto
-  let valorInformadoNumero = null;
-  if (valorInformado !== undefined && valorInformado !== null && valorInformado !== "") {
-    valorInformadoNumero = Number(valorInformado);
-
-    if (Number.isNaN(valorInformadoNumero) || valorInformadoNumero < 0) {
-      throw new AppError("valorInformado deve ser um número maior ou igual a zero.", 400, "bad_request");
-    }
-
-    valorInformadoNumero = roundMoney(valorInformadoNumero);
-  }
-
-  // Calcula conferência ANTES de fechar (mais seguro para pegar dados do caixa aberto)
-  const conferenciaBase = await calcularConferenciaCaixa({
+  // Conferência antes de fechar (para usar dados do caixa aberto)
+  const conferencia = await calcularConferenciaCaixa({
     caixaId: caixaAberto.id,
     valorInicial: caixaAberto.valorInicial,
+    valorInformado,
   });
-
-  const valorEsperado = conferenciaBase.valorEsperado;
-
-  const diferenca =
-    valorInformadoNumero === null ? null : roundMoney(valorInformadoNumero - valorEsperado);
-
-  const houveDivergencia =
-    valorInformadoNumero === null ? false : Math.abs(diferenca) > 0.009;
 
   const fechado = await prisma.caixa.update({
     where: { id: caixaAberto.id },
@@ -289,16 +303,10 @@ export async function fecharCaixaService({ usuarioFechamentoId, valorInformado }
     status: fechado.status,
     abertoEm: fechado.abertoEm,
     fechadoEm: fechado.fechadoEm,
-    valorInicial: toMoney(fechado.valorInicial),
+    valorInicial: Number(fechado.valorInicial),
     usuarioAbertura: fechado.usuarioAbertura,
     usuarioFechamento: fechado.usuarioFechamento,
     resumo,
-    conferencia: {
-      valorEsperado,
-      valorInformado: valorInformadoNumero,
-      diferenca,
-      houveDivergencia,
-      componentes: conferenciaBase.componentes,
-    },
+    conferencia,
   };
 }

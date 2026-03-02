@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Backend do projeto e-commerce",
+  "description": "Backend do sistema Clínica Vet (PDV, estoque e vendas)",
   "type": "module",
   "main": "server.js",
   "scripts": {
@@ -10,12 +10,8 @@
     "start:staging": "cross-env NODE_ENV=staging node server.js",
     "start:prod": "cross-env NODE_ENV=production node server.js",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.mjs",
-    "seed:admin": "node seeds/createAdmin.js",
-    "seed:vendor": "node seeds/createVendedor.js",
-    "seed:client": "node seeds/createCliente.js",
-    "seed:products": "node seeds/createProductsAndCategories.js",
-    "seed:test-orders": "node seeds/createTestOrders.js",
-    "seed:all": "npm run seed:admin && npm run seed:vendor && npm run seed:client && npm run seed:products && npm run seed:test-orders"
+    "seed:clinica": "node seeds/seed-clinica.js",
+    "seed:all": "npm run seed:clinica"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -23,13 +19,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
-    "express-rate-limit": "^8.1.0",
     "helmet": "^8.1.0",
     "joi": "^18.0.1",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
-    "nanoid": "^5.1.5",
-    "qrcode.react": "^4.2.0",
     "zod": "^3.22.2"
   },
   "devDependencies": {
