@@ -1,10 +1,15 @@
 import prisma from "../config/prisma.js";
+import { AppError } from "../utils/AppError.js";
 
 function getModel(client, possibleNames = []) {
   for (const name of possibleNames) {
     if (client?.[name]) return client[name];
   }
   return null;
+}
+
+function round2(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 
 function mapVendaItemResponse(item) {
@@ -57,29 +62,25 @@ function mapVendaResponse(venda) {
 
 export async function criarVendaService({ usuarioId, itens }) {
   if (!usuarioId) {
-    const err = new Error("usuarioId é obrigatório.");
-    err.statusCode = 400;
-    throw err;
+    throw new AppError("usuarioId é obrigatório.", 400, "request_error");
   }
 
   if (!Array.isArray(itens) || itens.length === 0) {
-    const err = new Error("itens é obrigatório e deve conter pelo menos 1 item.");
-    err.statusCode = 400;
-    throw err;
+    throw new AppError(
+      "itens é obrigatório e deve conter pelo menos 1 item.",
+      400,
+      "request_error"
+    );
   }
 
   for (const item of itens) {
     if (!item.produtoId) {
-      const err = new Error("Cada item deve ter produtoId.");
-      err.statusCode = 400;
-      throw err;
+      throw new AppError("Cada item deve ter produtoId.", 400, "request_error");
     }
 
     const qtd = Number(item.quantidade);
     if (Number.isNaN(qtd) || qtd <= 0) {
-      const err = new Error("Quantidade deve ser maior que zero.");
-      err.statusCode = 400;
-      throw err;
+      throw new AppError("Quantidade deve ser maior que zero.", 400, "request_error");
     }
   }
 
@@ -89,15 +90,11 @@ export async function criarVendaService({ usuarioId, itens }) {
   });
 
   if (!usuario) {
-    const err = new Error("Usuário não encontrado.");
-    err.statusCode = 404;
-    throw err;
+    throw new AppError("Usuário não encontrado.", 404, "request_error");
   }
 
   if (!usuario.ativo) {
-    const err = new Error("Usuário está inativo.");
-    err.statusCode = 400;
-    throw err;
+    throw new AppError("Usuário está inativo.", 400, "request_error");
   }
 
   const caixaAberto = await prisma.caixa.findFirst({
@@ -106,9 +103,11 @@ export async function criarVendaService({ usuarioId, itens }) {
   });
 
   if (!caixaAberto) {
-    const err = new Error("Não existe caixa aberto para registrar venda.");
-    err.statusCode = 409;
-    throw err;
+    throw new AppError(
+      "Não existe caixa aberto para registrar venda.",
+      409,
+      "request_error"
+    );
   }
 
   const produtoIds = [...new Set(itens.map((i) => i.produtoId))];
@@ -122,9 +121,11 @@ export async function criarVendaService({ usuarioId, itens }) {
     const encontrados = new Set(produtos.map((p) => p.id));
     const faltando = produtoIds.filter((id) => !encontrados.has(id));
 
-    const err = new Error(`Produto(s) não encontrado(s): ${faltando.join(", ")}`);
-    err.statusCode = 404;
-    throw err;
+    throw new AppError(
+      `Produto(s) não encontrado(s): ${faltando.join(", ")}`,
+      404,
+      "request_error"
+    );
   }
 
   const produtoMap = new Map(produtos.map((p) => [p.id, p]));
@@ -150,11 +151,11 @@ export async function criarVendaService({ usuarioId, itens }) {
     const estoqueAtual = produto?.estoqueSaldo?.quantidade ?? 0;
 
     if (estoqueAtual < item.quantidade) {
-      const err = new Error(
-        `Estoque insuficiente para "${produto.nome}". Disponível: ${estoqueAtual}, solicitado: ${item.quantidade}.`
+      throw new AppError(
+        `Estoque insuficiente para "${produto.nome}". Disponível: ${estoqueAtual}, solicitado: ${item.quantidade}.`,
+        409,
+        "request_error"
       );
-      err.statusCode = 409;
-      throw err;
     }
 
     const precoUnitario = Number(produto.precoVenda);
@@ -180,17 +181,18 @@ export async function criarVendaService({ usuarioId, itens }) {
         descontoTotal: 0,
         totalLiquido: totalVenda,
         pagoNoAto: 0,
-        fiadoValor: 0,
+        fiadoValor: totalVenda,
+        status: "PENDENTE",
       },
     });
 
     const itemVendaModel = getModel(tx, ["vendaItem", "itemVenda"]);
     if (!itemVendaModel) {
-      const err = new Error(
-        "Model de item de venda não encontrado no Prisma Client. Esperado: vendaItem ou itemVenda."
+      throw new AppError(
+        "Model de item de venda não encontrado no Prisma Client. Esperado: vendaItem ou itemVenda.",
+        500,
+        "internal_error"
       );
-      err.statusCode = 500;
-      throw err;
     }
 
     const estoqueMovModel = getModel(tx, ["estoqueMov", "movimentoEstoque"]);
@@ -242,6 +244,8 @@ export async function criarVendaService({ usuarioId, itens }) {
     usuarioId,
     totalBruto: Number(totalVenda),
     totalLiquido: Number(totalVenda),
+    pagoNoAto: Number(resultado.pagoNoAto),
+    fiadoValor: Number(resultado.fiadoValor),
     itens: itensParaCriar.map((i) => ({
       produtoId: i.produtoId,
       codigo: i.produtoCodigo,
@@ -278,9 +282,7 @@ export async function listarVendasService() {
 
 export async function obterVendaPorIdService(id) {
   if (!id) {
-    const err = new Error("id da venda é obrigatório.");
-    err.statusCode = 400;
-    throw err;
+    throw new AppError("id da venda é obrigatório.", 400, "request_error");
   }
 
   const venda = await prisma.venda.findUnique({
@@ -307,9 +309,7 @@ export async function obterVendaPorIdService(id) {
   });
 
   if (!venda) {
-    const err = new Error("Venda não encontrada.");
-    err.statusCode = 404;
-    throw err;
+    throw new AppError("Venda não encontrada.", 404, "request_error");
   }
 
   const base = mapVendaResponse(venda);
@@ -331,5 +331,171 @@ export async function obterVendaPorIdService(id) {
       data: p.data,
       usuarioId: p.usuarioId,
     })),
+  };
+}
+
+export async function registrarPagamentoVendaService({
+  vendaId,
+  usuarioId,
+  forma,
+  valor,
+}) {
+  if (!vendaId) {
+    throw new AppError("vendaId é obrigatório.", 400, "request_error");
+  }
+
+  if (!usuarioId) {
+    throw new AppError("usuarioId é obrigatório.", 400, "request_error");
+  }
+
+  if (!forma) {
+    throw new AppError("forma é obrigatória.", 400, "request_error");
+  }
+
+  const formaNormalizada = String(forma).toUpperCase();
+  const formasValidas = ["DINHEIRO", "CARTAO", "PIX", "TRANSFERENCIA"];
+
+  if (!formasValidas.includes(formaNormalizada)) {
+    throw new AppError(
+      `Forma de pagamento inválida. Use: ${formasValidas.join(", ")}.`,
+      400,
+      "request_error"
+    );
+  }
+
+  const valorNumero = Number(valor);
+  if (Number.isNaN(valorNumero) || valorNumero <= 0) {
+    throw new AppError(
+      "valor deve ser um número maior que zero.",
+      400,
+      "request_error"
+    );
+  }
+
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: usuarioId },
+    select: { id: true, nome: true, ativo: true },
+  });
+
+  if (!usuario) {
+    throw new AppError("Usuário não encontrado.", 404, "request_error");
+  }
+
+  if (!usuario.ativo) {
+    throw new AppError("Usuário está inativo.", 400, "request_error");
+  }
+
+  const caixaAberto = await prisma.caixa.findFirst({
+    where: { status: "ABERTO" },
+    orderBy: { abertoEm: "desc" },
+    select: { id: true, status: true, abertoEm: true },
+  });
+
+  if (!caixaAberto) {
+    throw new AppError(
+      "Não existe caixa aberto para registrar pagamento.",
+      409,
+      "request_error"
+    );
+  }
+
+  const resultado = await prisma.$transaction(async (tx) => {
+    const venda = await tx.venda.findUnique({
+      where: { id: vendaId },
+      select: {
+        id: true,
+        status: true,
+        totalLiquido: true,
+        pagoNoAto: true,
+        fiadoValor: true,
+        canceladaEm: true,
+      },
+    });
+
+    if (!venda) {
+      throw new AppError("Venda não encontrada.", 404, "request_error");
+    }
+
+    if (venda.status === "CANCELADA" || venda.canceladaEm) {
+      throw new AppError(
+        "Não é possível registrar pagamento em venda cancelada.",
+        409,
+        "request_error"
+      );
+    }
+
+    const totalLiquido = Number(venda.totalLiquido);
+    const pagoAtual = Number(venda.pagoNoAto);
+    const restanteAtual = round2(totalLiquido - pagoAtual);
+
+    if (restanteAtual <= 0) {
+      throw new AppError(
+        "Venda já está totalmente paga.",
+        409,
+        "request_error"
+      );
+    }
+
+    if (valorNumero > restanteAtual) {
+      throw new AppError(
+        `Valor do pagamento excede o saldo restante da venda (restante: ${restanteAtual.toFixed(2)}).`,
+        409,
+        "request_error"
+      );
+    }
+
+    const pagamento = await tx.pagamento.create({
+      data: {
+        caixaId: caixaAberto.id,
+        vendaId,
+        forma: formaNormalizada,
+        valor: valorNumero,
+        usuarioId,
+      },
+    });
+
+    const novoPagoNoAto = round2(pagoAtual + valorNumero);
+    const novoFiado = round2(totalLiquido - novoPagoNoAto);
+    const novoStatus = novoFiado <= 0 ? "FINALIZADA" : "PENDENTE";
+
+    const vendaAtualizada = await tx.venda.update({
+      where: { id: vendaId },
+      data: {
+        pagoNoAto: novoPagoNoAto,
+        fiadoValor: novoFiado < 0 ? 0 : novoFiado,
+        status: novoStatus,
+      },
+      select: {
+        id: true,
+        status: true,
+        totalLiquido: true,
+        pagoNoAto: true,
+        fiadoValor: true,
+      },
+    });
+
+    return {
+      pagamento,
+      venda: vendaAtualizada,
+      caixa: caixaAberto,
+    };
+  });
+
+  return {
+    vendaId: resultado.venda.id,
+    statusVenda: resultado.venda.status,
+    caixaId: resultado.caixa.id,
+    pagamento: {
+      id: resultado.pagamento.id,
+      forma: resultado.pagamento.forma,
+      valor: Number(resultado.pagamento.valor),
+      data: resultado.pagamento.data,
+      usuarioId: resultado.pagamento.usuarioId,
+    },
+    totaisVenda: {
+      totalLiquido: Number(resultado.venda.totalLiquido),
+      pagoNoAto: Number(resultado.venda.pagoNoAto),
+      fiadoValor: Number(resultado.venda.fiadoValor),
+    },
   };
 }

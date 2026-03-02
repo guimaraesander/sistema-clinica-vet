@@ -28,13 +28,14 @@ export async function obterCaixaAtual(req, res, next) {
     if (!caixa) {
       return res.status(200).json({
         success: true,
-        data: null,
         message: "Nenhum caixa aberto no momento.",
+        data: null,
       });
     }
 
     return res.status(200).json({
       success: true,
+      message: "Caixa atual obtido com sucesso.",
       data: caixa,
     });
   } catch (error) {
@@ -44,9 +45,12 @@ export async function obterCaixaAtual(req, res, next) {
 
 export async function fecharCaixa(req, res, next) {
   try {
-    const { usuarioFechamentoId } = req.body;
+    const { usuarioFechamentoId, valorInformado } = req.body;
 
-    const caixaFechado = await fecharCaixaService({ usuarioFechamentoId });
+    const caixaFechado = await fecharCaixaService({
+      usuarioFechamentoId,
+      valorInformado,
+    });
 
     return res.status(200).json({
       success: true,
@@ -66,6 +70,7 @@ export async function obterResumoCaixa(req, res, next) {
 
     return res.status(200).json({
       success: true,
+      message: "Resumo do caixa obtido com sucesso.",
       data: resumo,
     });
   } catch (error) {
